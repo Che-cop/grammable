@@ -1,5 +1,5 @@
 class GramsController < ApplicationController
-before_action :authenticate_user!, only: [:new, :create]
+  before_action :authenticate_user!, only: [:new, :create, :update, :edit, :destroy]
 
   def index
 
@@ -8,6 +8,8 @@ before_action :authenticate_user!, only: [:new, :create]
   def destroy
     @gram = Gram.find_by_id(params[:id])
     return render_not_found if @gram.blank?
+    return render_forbidden if @gram.user != current_user
+
     @gram.destroy
     redirect_to root_path
   end
@@ -24,42 +26,46 @@ before_action :authenticate_user!, only: [:new, :create]
   def edit
     @gram = Gram.find_by_id(params[:id])
     return render_not_found if @gram.blank?
+    return render_forbidden if @gram.user != current_user
   end
 
-def create
-  @gram = current_user.grams.create(gram_params)
+  def create
+    @gram = current_user.grams.create(gram_params)
     if @gram.valid?
       redirect_to root_path
     else
       render :new, status: :unprocessable_entity
-  end
-end
-
-def update
-  @gram = Gram.find_by_id(params[:id])
-  return render_not_found if @gram.blank?
-
-  @gram.update_attributes(gram_params)
-
-  if @gram.valid?
-    redirect_to root_path
-  else
-    return render :edit, status: :unprocessable_entity
+    end
   end
 
-end
+  def update
+    @gram = Gram.find_by_id(params[:id])
+    return render_not_found if @gram.blank?
+    return render_forbidden if @gram.user != current_user
 
-private
+    @gram.update_attributes(gram_params)
 
-def gram_params
-  params.require(:gram).permit(:message)
-end
+    if @gram.valid?
+      redirect_to root_path
+    else
+      return render :edit, status: :unprocessable_entity
+    end
 
-def render_not_found
+  end
+
+  private
+
+  def gram_params
+    params.require(:gram).permit(:message)
+  end
+
+  def render_not_found
     render text: 'Not Found :(', status: :not_found
-end
+  end
 
-
+  def render_forbidden
+    render text: 'Forbidden :(', status: :forbidden
+  end
 
 
 end
